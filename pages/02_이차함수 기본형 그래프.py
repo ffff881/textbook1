@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
+import os # 파일 경로 확인을 위해 os 모듈 추가
 
 # 1. 페이지 설정
 # ----------------------------------------------------------------------
@@ -14,7 +15,7 @@ st.markdown("""
 # ----------------------------------------------------------------------
 st.sidebar.header('계수 A 값 조절')
 
-# a 값 조절 슬라이더 설정: -100.0 부터 100.0 까지 확장
+# a 값 조절 슬라이더 설정
 a = st.sidebar.slider(
     'a 값 선택',
     min_value=-100.0,
@@ -27,17 +28,17 @@ a = st.sidebar.slider(
 # a가 0일 경우 예외 처리
 if a == 0.0:
     st.sidebar.error("🚨 **a는 0이 될 수 없습니다!** (a=0이면 직선 y=0이 됩니다.)")
-    a = 0.0001  # 그래프 계산을 위한 아주 작은 값으로 임시 대체
+    a = 0.0001
 
 # 3. 그래프 생성 및 출력
 # ----------------------------------------------------------------------
-# x 값 범위 정의 (폭이 좁아질 경우를 대비해 좁은 x 범위 사용)
+# x 값 범위 정의
 x = np.linspace(-2, 2, 400)
 # y = ax^2 계산
 y = a * x**2
 
-# y축 표시 범위를 a 값에 따라 동적으로 설정 (단, 너무 커지거나 작아지지 않도록 제한)
-y_limit = max(10, min(100, abs(a) * 4)) # |a| * 4 값과 100 중 작은 값, 10과 비교해 큰 값 선택
+# y축 표시 범위를 a 값에 따라 동적으로 설정
+y_limit = max(10, min(100, abs(a) * 4))
 
 col_graph, col_info = st.columns([2, 1])
 
@@ -55,9 +56,9 @@ with col_graph:
     ax.set_xlabel('$x$')
     ax.set_ylabel('$y$')
     ax.set_xlim(-2, 2)
-    ax.set_ylim(-y_limit, y_limit)  # 동적으로 설정된 y축 범위
-    ax.axhline(0, color='black', linewidth=0.8) # x축
-    ax.axvline(0, color='black', linewidth=0.8) # y축
+    ax.set_ylim(-y_limit, y_limit)
+    ax.axhline(0, color='black', linewidth=0.8)
+    ax.axvline(0, color='black', linewidth=0.8)
     ax.grid(True, linestyle=':', alpha=0.5)
     ax.legend(loc='upper right', frameon=True)
 
@@ -85,11 +86,15 @@ st.markdown("---")
 # ----------------------------------------------------------------------
 st.header("📝 퀴즈: $a$ 값에 따른 그래프 특징 확인")
 
-quiz_key = "quiz_key_yax2"
-if quiz_key not in st.session_state:
-    st.session_state[quiz_key] = False
+# 퀴즈 결과 저장을 위한 session state 초기화
+if 'q1_correct' not in st.session_state:
+    st.session_state.q1_correct = False
+if 'q2_correct' not in st.session_state:
+    st.session_state.q2_correct = False
 
 with st.expander("퀴즈 풀기"):
+    
+    # --- 문제 1 ---
     st.subheader("문제 1. 볼록 방향 (선택형)")
     st.markdown("이차함수 $y = -0.5x^2$ 의 그래프는 어느 방향으로 볼록한가요?")
     
@@ -99,14 +104,17 @@ with st.expander("퀴즈 풀기"):
         key='q1'
     )
     
-    if st.button('정답 확인 1'):
+    if st.button('정답 확인 1', key='btn_q1'):
         if q1_answer == '위로 볼록':
             st.success("✅ 정답입니다! $a = -0.5$ (음수)이므로 위로 볼록합니다.")
+            st.session_state.q1_correct = True
         else:
             st.error("❌ 오답입니다. $a$ 값이 음수이면 그래프는 위로 볼록합니다. a 값의 부호를 다시 확인하세요.")
+            st.session_state.q1_correct = False
 
     st.markdown("---")
 
+    # --- 문제 2 ---
     st.subheader("문제 2. 그래프 폭 (주관식/개념 확인)")
     st.markdown("두 이차함수 $y = 3x^2$ 와 $y = 0.5x^2$ 중, 그래프의 폭이 **더 좁은** 것은 무엇인가요? (정답을 수식으로 입력하세요)")
     
@@ -115,20 +123,26 @@ with st.expander("퀴즈 풀기"):
         key='q2'
     )
     
-    if st.button('정답 확인 2'):
-        # 정답 비교를 위해 공백 제거 후 소문자로 변환
+    if st.button('정답 확인 2', key='btn_q2'):
         processed_answer = q2_answer.replace(" ", "").lower()
-        
-        correct_answers = ['y=3x^2', '3x^2'] # 허용되는 정답
+        correct_answers = ['y=3x^2', '3x^2']
         
         if processed_answer in correct_answers:
             st.success("✅ 정답입니다! $|3| > |0.5|$ 이므로, $|a|$ 값이 더 큰 $y = 3x^2$ 의 폭이 더 좁습니다.")
+            st.session_state.q2_correct = True
         else:
             st.error("❌ 오답입니다. 폭은 $a$의 **절댓값 $|a|$**에 의해 결정됩니다. 절댓값이 클수록 폭이 좁아집니다. $y=3x^2$를 입력하세요.")
-
-    st.session_state[quiz_key] = True
-
-# 퀴즈 풀이가 끝나면 격려 메시지
-if st.session_state[quiz_key]:
-    st.balloons()
-    st.sidebar.success("👏 학습 및 퀴즈 완료!")
+            st.session_state.q2_correct = False
+            
+# 5. 모든 퀴즈 정답 시 이미지 표시
+# ----------------------------------------------------------------------
+if st.session_state.q1_correct and st.session_state.q2_correct:
+    st.sidebar.success("👏 모든 퀴즈 정답! 축하합니다!")
+    st.markdown("## 🎉 축하합니다! 모든 퀴즈를 맞히셨습니다!")
+    
+    # 'images/1.png' 파일이 존재하는지 확인하고 표시
+    image_path = 'images/1.png'
+    if os.path.exists(image_path):
+        st.image(image_path, caption='완벽하게 이해했어요!')
+    else:
+        st.warning(f"이미지 파일 ({image_path})을 찾을 수 없습니다. 'app.py' 파일과 같은 위치에 'images' 폴더를 만들고, 그 안에 '1.png' 파일을 넣어주세요.")
